@@ -1,3 +1,11 @@
+definitions:
+  model.User:
+    properties:
+      phone:
+        type: string
+      registered_at:
+        type: string
+    type: object
 info:
   contact: {}
 paths:
@@ -61,4 +69,49 @@ paths:
               type: string
             type: object
       summary: Verify OTP and login/register
+  /users:
+    get:
+      description: List users with optional search, pagination (requires JWT).
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Page size
+        in: query
+        name: size
+        type: integer
+      - description: Search by phone substring
+        in: query
+        name: search
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: List users
+  /users/{phone}:
+    get:
+      parameters:
+      - description: User phone
+        in: path
+        name: phone
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.User'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get user by phone
 swagger: "2.0"
