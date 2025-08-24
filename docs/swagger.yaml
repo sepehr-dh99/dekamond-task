@@ -1,0 +1,64 @@
+info:
+  contact: {}
+paths:
+  /auth/request-otp:
+    post:
+      description: Generate OTP for the given phone (Iranian format).
+      parameters:
+      - description: Phone number (09XXXXXXXXX)
+        in: body
+        name: phone
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "429":
+          description: Too Many Requests
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Request OTP
+  /auth/verify:
+    post:
+      description: Validates OTP, registers user if new, and returns JWT.
+      parameters:
+      - description: Phone number
+        in: body
+        name: phone
+        required: true
+        schema:
+          type: string
+      - description: OTP code
+        in: body
+        name: otp
+        required: true
+        schema:
+          type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Verify OTP and login/register
+swagger: "2.0"
