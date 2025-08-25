@@ -24,6 +24,7 @@ func NewUserController(u *service.UserService) *UserController {
 // @Param search query string false "Search by phone substring"
 // @Success 200 {object} map[string]interface{}
 // @Router /users [get]
+// @Security     BearerAuth
 func (uc *UserController) ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	page, _ := strconv.Atoi(q.Get("page"))
@@ -51,6 +52,7 @@ func (uc *UserController) ListUsersHandler(w http.ResponseWriter, r *http.Reques
 // @Success 200 {object} model.User
 // @Failure 404 {object} map[string]string
 // @Router /users/{phone} [get]
+// @Security     BearerAuth
 func (uc *UserController) GetUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract phone from URL path, e.g. /users/0912...
 	phone := r.URL.Path[len("/users/"):]
