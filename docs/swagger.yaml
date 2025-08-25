@@ -1,11 +1,88 @@
 basePath: /
 definitions:
-  model.User:
+  dto.RequestOTPRequest:
     properties:
       phone:
         type: string
-      registered_at:
+    type: object
+  dto.UserResponse:
+    properties:
+      phone:
+        example: "09123456789"
         type: string
+      registered_at:
+        example: "2025-08-25T12:00:00Z"
+        type: string
+    type: object
+  dto.VerifyOTPRequest:
+    properties:
+      otp:
+        type: string
+      phone:
+        type: string
+    type: object
+  dto.VerifyOTPResponse:
+    properties:
+      token:
+        type: string
+    type: object
+  response.ErrorResponse:
+    properties:
+      message:
+        example: Invalid request
+        type: string
+      success:
+        example: false
+        type: boolean
+    type: object
+  response.PaginatedResponse-dto_UserResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/dto.UserResponse'
+        type: array
+      message:
+        type: string
+      page:
+        type: integer
+      size:
+        type: integer
+      success:
+        type: boolean
+      total:
+        type: integer
+    type: object
+  response.Response-any:
+    properties:
+      data: {}
+      message:
+        example: OK
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  response.Response-dto_UserResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.UserResponse'
+      message:
+        example: OK
+        type: string
+      success:
+        example: true
+        type: boolean
+    type: object
+  response.Response-dto_VerifyOTPResponse:
+    properties:
+      data:
+        $ref: '#/definitions/dto.VerifyOTPResponse'
+      message:
+        example: OK
+        type: string
+      success:
+        example: true
+        type: boolean
     type: object
 host: localhost:8080
 info:
@@ -16,66 +93,68 @@ info:
 paths:
   /auth/request-otp:
     post:
+      consumes:
+      - application/json
       description: Generate OTP for the given phone (Iranian format).
       parameters:
       - description: Phone number (09XXXXXXXXX)
         in: body
-        name: phone
+        name: request
         required: true
         schema:
-          type: string
+          $ref: '#/definitions/dto.RequestOTPRequest'
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: Successful operation
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response-any'
         "400":
-          description: Bad Request
+          description: Invalid request
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
         "429":
-          description: Too Many Requests
+          description: Too many requests
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Request OTP
+      tags:
+      - Auth
   /auth/verify:
     post:
+      consumes:
+      - application/json
       description: Validates OTP, registers user if new, and returns JWT.
       parameters:
-      - description: Phone number
+      - description: Phone and OTP
         in: body
-        name: phone
+        name: request
         required: true
         schema:
-          type: string
-      - description: OTP code
-        in: body
-        name: otp
-        required: true
-        schema:
-          type: string
+          $ref: '#/definitions/dto.VerifyOTPRequest'
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: Login successful
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.Response-dto_VerifyOTPResponse'
         "400":
-          description: Bad Request
+          description: Invalid input
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       summary: Verify OTP and login/register
+      tags:
+      - Auth
   /users:
     get:
+      consumes:
+      - application/json
       description: List users with optional search, pagination (requires JWT).
       parameters:
       - default: 1
@@ -92,37 +171,57 @@ paths:
         in: query
         name: search
         type: string
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: Paginated list of users
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/response.PaginatedResponse-dto_UserResponse'
+        "400":
+          description: Invalid query
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: List users
+      tags:
+      - Users
   /users/{phone}:
     get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by phone number.
       parameters:
       - description: User phone
         in: path
         name: phone
         required: true
         type: string
+      produces:
+      - application/json
       responses:
         "200":
-          description: OK
+          description: User details
           schema:
-            $ref: '#/definitions/model.User'
+            $ref: '#/definitions/response.Response-dto_UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.ErrorResponse'
         "404":
-          description: Not Found
+          description: User not found
           schema:
-            additionalProperties:
-              type: string
-            type: object
+            $ref: '#/definitions/response.ErrorResponse'
       security:
       - BearerAuth: []
       summary: Get user by phone
+      tags:
+      - Users
 schemes:
 - http
 securityDefinitions:

@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
+	"dekamond-task/controller/dto"
+	"dekamond-task/package/response"
 	"dekamond-task/service"
 )
 
@@ -19,14 +20,20 @@ func NewUserController(u *service.UserService) *UserController {
 // ListUsersHandler handles GET /users.
 // @Summary List users
 // @Description List users with optional search, pagination (requires JWT).
+// @Tags Users
+// @Accept json
+// @Produce json
 // @Param page query int false "Page number" default(1)
 // @Param size query int false "Page size" default(10)
 // @Param search query string false "Search by phone substring"
-// @Success 200 {object} map[string]interface{}
+// @Success 200 {object} response.PaginatedResponse[dto.UserResponse] "Paginated list of users"
+// @Failure 400 {object} response.ErrorResponse "Invalid query"
+// @Failure 401 {object} response.ErrorResponse "Unauthorized"
 // @Router /users [get]
-// @Security     BearerAuth
+// @Security BearerAuth
 func (uc *UserController) ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
+
 	page, _ := strconv.Atoi(q.Get("page"))
 	if page < 1 {
 		page = 1
@@ -38,29 +45,41 @@ func (uc *UserController) ListUsersHandler(w http.ResponseWriter, r *http.Reques
 	search := q.Get("search")
 
 	users, total := uc.userSvc.ListUsers(search, page, size)
-	// Prepare response
-	resp := map[string]interface{}{
-		"total": total, "page": page, "size": size, "users": users,
+
+	out := make([]dto.UserResponse, 0, len(users))
+	for _, u := range users {
+		out = append(out, dto.UserResponse{
+			Phone:        u.Phone,
+			RegisteredAt: u.RegisteredAt,
+		})
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+
+	response.Paginated[dto.UserResponse](w, out, total, page, size, "Users fetched successfully")
 }
 
 // GetUserHandler handles GET /users/{phone}.
 // @Summary Get user by phone
+// @Description Retrieve a single user by phone number.
+// @Tags Users
+// @Accept json
+// @Produce json
 // @Param phone path string true "User phone"
-// @Success 200 {object} model.User
-// @Failure 404 {object} map[string]string
+// @Success 200 {object} response.Response[dto.UserResponse] "User details"
+// @Failure 404 {object} response.ErrorResponse "User not found"
+// @Failure 401 {object} response.ErrorResponse "Unauthorized"
 // @Router /users/{phone} [get]
-// @Security     BearerAuth
+// @Security BearerAuth
 func (uc *UserController) GetUserHandler(w http.ResponseWriter, r *http.Request) {
-	// Extract phone from URL path, e.g. /users/0912...
 	phone := r.URL.Path[len("/users/"):]
-	user, exists := uc.userSvc.GetUser(phone)
-	if !exists {
-		http.Error(w, `{"error":"user not found"}`, 404)
+	u, ok := uc.userSvc.GetUser(phone)
+	if !ok {
+		response.Error(w, http.StatusNotFound, "User not found")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(user)
+
+	payload := dto.UserResponse{
+		Phone:        u.Phone,
+		RegisteredAt: u.RegisteredAt,
+	}
+	response.Success(w, &payload, "User fetched successfully")
 }
