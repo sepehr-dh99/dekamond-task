@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   model.User:
     properties:
@@ -6,8 +7,12 @@ definitions:
       registered_at:
         type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: OTP-based authentication and user management API.
+  title: Dekamond Task API
+  version: "1.0"
 paths:
   /auth/request-otp:
     post:
@@ -93,6 +98,8 @@ paths:
           schema:
             additionalProperties: true
             type: object
+      security:
+      - BearerAuth: []
       summary: List users
   /users/{phone}:
     get:
@@ -113,5 +120,14 @@ paths:
             additionalProperties:
               type: string
             type: object
+      security:
+      - BearerAuth: []
       summary: Get user by phone
+schemes:
+- http
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
 swagger: "2.0"
