@@ -1,9 +1,7 @@
 package jwt
 
 import (
-	"fmt"
-	"net/http"
-	"strings"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -21,21 +19,19 @@ func CreateJWT(phone string) (string, error) {
 }
 
 // JWTAuth is middleware that checks Bearer token.
-func JWTAuth(next http.HandlerFunc) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" || !strings.HasPrefix(authHeader, "Bearer ") {
-			http.Error(w, `{"error":"missing token"}`, 401)
-			return
+func ValidateJWT(tokenStr string) (jwt.MapClaims, error) {
+	token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (interface{}, error) {
+		if t.Method.Alg() != jwt.SigningMethodHS256.Alg() {
+			return nil, errors.New("unexpected signing method")
 		}
-		tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
-			return jwtKey, nil
-		})
-		if err != nil || !token.Valid {
-			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err), 401)
-			return
-		}
-		next.ServeHTTP(w, r)
+		return jwtKey, nil
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		return claims, nil
+	}
+	return nil, errors.New("invalid token")
 }

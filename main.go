@@ -5,9 +5,9 @@ import (
 	"net/http"
 
 	"dekamond-task/controller"
-	"dekamond-task/package/jwt"
+	"dekamond-task/middleware"
 	"dekamond-task/package/otp"
-	ratelimiter "dekamond-task/package/rateLimiter"
+	ratelimiter "dekamond-task/package/rate_limiter"
 	"dekamond-task/service"
 
 	_ "dekamond-task/docs"
@@ -39,8 +39,8 @@ func main() {
 	http.HandleFunc("/auth/verify", authCtrl.VerifyOTPHandler)
 
 	// Protected user routes
-	http.Handle("/users", jwt.JWTAuth(userCtrl.ListUsersHandler))
-	http.Handle("/users/", jwt.JWTAuth(userCtrl.GetUserHandler))
+	http.Handle("/users", middleware.JWTAuth(http.HandlerFunc(userCtrl.ListUsersHandler)))
+	http.Handle("/users/", middleware.JWTAuth(http.HandlerFunc(userCtrl.GetUserHandler)))
 
 	// Swagger UI (visit http://localhost:8080/swagger/index.html)
 	http.HandleFunc("/swagger/", httpSwagger.WrapHandler)
