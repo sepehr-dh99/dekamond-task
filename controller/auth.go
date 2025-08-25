@@ -40,7 +40,7 @@ func (ac *AuthController) RequestOTPHandler(w http.ResponseWriter, r *http.Reque
 
 	// Validate DTO
 	if err := validator.Validate.Struct(req); err != nil {
-		response.Error(w, http.StatusBadRequest, "phone is required")
+		response.Error(w, http.StatusBadRequest, "request object is not valid")
 		return
 	}
 
@@ -72,7 +72,7 @@ func (ac *AuthController) VerifyOTPHandler(w http.ResponseWriter, r *http.Reques
 
 	// Validate DTO
 	if err := validator.Validate.Struct(req); err != nil {
-		response.Error(w, http.StatusBadRequest, "phone and otp required")
+		response.Error(w, http.StatusBadRequest, "request object is not valid")
 		return
 	}
 
