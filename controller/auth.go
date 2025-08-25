@@ -9,6 +9,7 @@ import (
 	"dekamond-task/package/otp"
 	ratelimiter "dekamond-task/package/rate_limiter"
 	"dekamond-task/package/response"
+	"dekamond-task/package/validator"
 	"dekamond-task/service"
 )
 
@@ -36,20 +37,21 @@ func NewAuthController(o *otp.OTPService, u *service.UserService, l *ratelimiter
 func (ac *AuthController) RequestOTPHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.RequestOTPRequest
 	json.NewDecoder(r.Body).Decode(&req)
-	phone := req.Phone
-	if phone == "" {
+
+	// Validate DTO
+	if err := validator.Validate.Struct(req); err != nil {
 		response.Error(w, http.StatusBadRequest, "phone is required")
 		return
 	}
 
 	// Rate limit check
-	if err := ac.limiter.Allow(phone); err != nil {
+	if err := ac.limiter.Allow(req.Phone); err != nil {
 		response.Error(w, http.StatusTooManyRequests, "too many requests")
 		return
 	}
 
 	// Generate and store OTP
-	ac.otpSvc.GenerateOTP(phone)
+	ac.otpSvc.GenerateOTP(req.Phone)
 	response.Success[any](w, nil, "OTP sent successfully")
 }
 
@@ -67,7 +69,9 @@ func (ac *AuthController) RequestOTPHandler(w http.ResponseWriter, r *http.Reque
 func (ac *AuthController) VerifyOTPHandler(w http.ResponseWriter, r *http.Request) {
 	var req dto.VerifyOTPRequest
 	json.NewDecoder(r.Body).Decode(&req)
-	if req.Phone == "" || req.OTP == "" {
+
+	// Validate DTO
+	if err := validator.Validate.Struct(req); err != nil {
 		response.Error(w, http.StatusBadRequest, "phone and otp required")
 		return
 	}
